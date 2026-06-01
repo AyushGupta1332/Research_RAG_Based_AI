@@ -1,7 +1,7 @@
 # Research Agent — Project Memory
 
-> **Last Updated:** 2026-05-13T19:18 IST
-> **Current Phase:** Phase 6 Complete — Skipped Phase 5 (optional)
+> **Last Updated:** 2026-06-01T22:05 IST
+> **Current Phase:** Phase 8 Complete — All Core Phases Successfully Implemented!
 
 ---
 
@@ -264,13 +264,51 @@ Top-K Final Chunks (with scores + citations)
 
 ---
 
+## Phase 7 — Memory Architecture ✅ COMPLETE
+
+**What was built:**
+
+### Backend — Conversational Session Memory
+- `backend/app/models/memory.py` — `ResearchSession` and `ResearchMessage` SQLAlchemy models to save session threads, agent tracking arrays, and grounding verdicts persistently in the SQLite database.
+- `backend/app/api/sessions.py` — Complete REST interface for creating threads, listing conversations, reading historical messages, and deleting sessions.
+- **Context-Aware Planner (Conversational Pronoun Resolver):** Integrated a chat history compiler inside `planner.py` using Groq. The Planner Agent processes recent chat logs and translates relative requests (e.g., *"Compare its metrics with the previous baseline"*) into self-contained search query vectors resolving ambiguous pronouns.
+
+### Frontend — Dynamic Chat Sidebar
+- Upgraded `research.html` with a beautiful split-panel:
+  - Collapsible sidebar listing active conversations, with thread rename/delete features.
+  - Conversational assistant workspace displaying standard chat messages side-by-side with Agent traces and Critic Grounding verification reports.
+
+---
+
+## Phase 8 — Evaluation Framework ✅ COMPLETE
+
+**What was built:**
+
+### Backend — Automated Benchmarking Engine
+- `backend/app/utils/evaluation_dataset.json` — A ground-truth test suite linking standard domain queries to specific section matching criteria.
+- `backend/app/services/evaluation_service.py` — Formulates precision tracking calculations:
+  - **Precision@5:** Ratio of relevant chunks returned in top-5.
+  - **Recall@5:** Binary hit indicator for ground-truth matching.
+  - **Mean Reciprocal Rank (MRR):** Placement scoring of the primary correct match.
+  - **NDCG@5:** Positionally decayed retrieval usefulness metric.
+  - **Component Latency Profiler:** Time tracking breakdown for BM25, dense, RRF fusion, and cross-encoder reranker steps.
+  - **Factual Grounding aggregator:** Running database auditor pulling historical Critic Agent grounding scores and verdict percentages.
+- `backend/app/api/query.py` — Integrated new `/api/query/evaluate` and `/api/query/evaluate/run` endpoints for real-time benchmark execution.
+
+### Frontend — Performance Dashboard
+- `frontend/templates/evaluation.html` — Built a state-of-the-art diagnostic viewport featuring:
+  - **SVG Radial Gauges** displaying percentage scores for Precision@5, Recall@5, MRR, and NDCG@5.
+  - **Dynamic Horizontal Bar Charts** representing component latency timings.
+  - **Grid Card Deck** displaying historical grounding verdict percentages (Reliable, Mostly Reliable, Partially, Unreliable).
+  - **Interactive Profiling Table** mapping test cases, raw latencies, and specific relevances.
+
+---
+
 ## What's NOT Built Yet
 
 | Feature | Phase | Status |
 |---|---|---|
 | Knowledge graph (Neo4j) | Phase 5 | Skipped (optional for MVP) |
-| Memory architecture | Phase 7 | Not started |
-| Evaluation framework | Phase 8 | Not started |
 
 ---
 
