@@ -46,6 +46,37 @@ When a research query is submitted, a loosely coupled, zero-dependency custom ag
 *   **Summarization Agent:** Compiles comprehensive, beautifully structured academic reports in Markdown.
 *   **Critic Agent (Grounding Auditor):** Acts as an independent auditor. It verifies every claim in the report against the retrieved chunks, computes a **Grounding Score (0–100%)**, flags hallucinations, and details contradictions/unsupported claims.
 
+### 5. Automated Performance Evaluation Framework (Phase 8)
+To guarantee the empirical quality of vector retrieval and the semantic fidelity of the multi-agent outputs, the system runs an automated end-to-end evaluation suite:
+*   **Vector Retrieval Benchmarking:** Tests the system against a ground-truth dataset (`evaluation_dataset.json`) consisting of common query vectors and their corresponding paper/section targets.
+*   **Component Latency Profiling:** Measures fine-grained timing metrics (in milliseconds) across each pipeline step—BM25 search, dense retrieval, RRF fusion, and cross-encoder reranking.
+*   **Factual Grounding Audits:** Periodically queries database history to aggregate the Critic Agent's auditing reviews, calculating the running average grounding index and historical verdict distributions.
+
+---
+
+## 📊 Evaluation & Retrieval Quality Metrics
+
+The system uses standard Information Retrieval (IR) metrics to mathematically grade searches over the top $K$ results (where $K=5$):
+
+### 1. Precision@K
+Calculates the fraction of retrieved chunks that are highly relevant to the query based on ground-truth document-section intersections:
+$$\text{Precision}@K = \frac{|\text{Relevant Chunks} \cap \text{Retrieved Chunks}|}{K}$$
+
+### 2. Recall@K
+Determines whether the expected ground-truth target chunk is successfully returned within the top-$K$ retrieved slots:
+$$\text{Recall}@K = \begin{cases} 1 & \text{if } \text{Relevant Chunks} \cap \text{Retrieved Chunks} \neq \emptyset \\ 0 & \text{otherwise} \end{cases}$$
+
+### 3. Mean Reciprocal Rank (MRR)
+Evaluates retrieval positioning quality by computing the reciprocal rank of the first relevant chunk found:
+$$\text{MRR} = \frac{1}{|Q|} \sum_{i=1}^{|Q|} \frac{1}{\text{Rank}_i}$$
+*Where $\text{Rank}_i$ is the 1-indexed position of the first matching chunk for query $i$. If no matching chunk is retrieved, the reciprocal rank is $0$.*
+
+### 4. Normalized Discounted Cumulative Gain (NDCG@K)
+Grades the search quality by discounting the usefulness (gain) of chunks based on their positional rank in the list:
+$$\text{DCG}@K = \sum_{i=1}^{K} \frac{rel_i}{\log_2(i + 1)}$$
+$$\text{NDCG}@K = \frac{\text{DCG}@K}{\text{IDCG}@K}$$
+*Where $rel_i \in \{0, 1\}$ represents binary relevance. $\text{IDCG}@K$ is the Ideal Discounted Cumulative Gain (the optimal ranking where all relevant chunks are at the top).*
+
 ---
 
 ## 📁 Technical Directory Structure
@@ -78,8 +109,11 @@ research-agent/
 │       ├── api/
 │       │   ├── auth.py              # User authentication REST endpoints
 │       │   ├── papers.py            # Paper library uploads & extractions
-│       │   ├── query.py             # Conversational agent query runner
+│       │   ├── query.py             # Conversational agent & performance benchmarking endpoints
 │       │   └── sessions.py          # Session management & conversation thread APIs
+│       ├── utils/
+│       │   ├── responses.py         # Standardized API response formatters
+│       │   └── evaluation_dataset.json # Ground-truth retrieval test cases (Phase 8)
 │       └── services/
 │           ├── auth_service.py      # Authentication workflows
 │           ├── pdf_parser.py        # PDF layouts section extractor
@@ -92,7 +126,8 @@ research-agent/
 │           ├── search_service.py    # Hybrid retrieval coordinator
 │           ├── llm_provider.py      # Groq LLM singleton abstraction
 │           ├── extraction_prompts.py# Structured JSON schemas for analysis
-│           └── extraction_service.py# Background metadata extraction engine
+│           ├── extraction_service.py# Background metadata extraction engine
+│           └── evaluation_service.py# Benchmarks precision & grounding auditor (Phase 8)
 │
 └── frontend/
     ├── templates/
@@ -103,7 +138,8 @@ research-agent/
     │   ├── upload.html              # Drag-and-drop file ingestion portal
     │   ├── papers.html              # Indexed papers index
     │   ├── paper_detail.html        # Detailed section chunks & AI extraction tab
-    │   └── research.html            # Conversational Agent workspace (split-view chat)
+    │   ├── research.html            # Conversational Agent workspace (split-view chat)
+    │   └── evaluation.html          # Performance Dashboard UI with SVG gauges (Phase 8)
     └── static/
         ├── css/styles.css           # Brand scrollbar customizations and custom CSS
         └── js/
