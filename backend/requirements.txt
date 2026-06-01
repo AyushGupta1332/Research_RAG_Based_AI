@@ -1,0 +1,36 @@
+# Flask Core
+Flask
+flask-cors
+flask-jwt-extended
+python-dotenv
+
+# Database
+Flask-SQLAlchemy
+Flask-Migrate
+SQLAlchemy
+
+# Password Hashing
+bcrypt
+
+# Validation
+marshmallow
+
+# Logging
+python-json-logger
+
+# PDF Processing (Phase 2)
+PyMuPDF
+tiktoken
+
+# Phase 3 — Embedding & Retrieval
+sentence-transformers
+chromadb
+rank-bm25
+numpy
+
+# Phase 4 — LLM Extraction
+groq
+
+# Testing
+pytest
+pytest-flask

@@ -1,0 +1,519 @@
+{% extends "base.html" %}
+{% block title %}AI Research Assistant — Research Agent{% endblock %}
+{% block body %}
+<div class="min-h-screen flex flex-col h-screen overflow-hidden">
+    <!-- Navigation Bar -->
+    <nav class="border-b border-white/5 backdrop-blur-xl bg-surface-950/80 flex-shrink-0 z-40">
+        <div class="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
+            <div class="flex items-center gap-6">
+                <a href="/dashboard" class="flex items-center gap-3">
+                    <div class="w-9 h-9 rounded-lg bg-gradient-to-br from-brand-500 to-purple-600 flex items-center justify-center shadow-lg shadow-brand-500/25">
+                        <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"></path></svg>
+                    </div>
+                    <span class="text-lg font-bold bg-gradient-to-r from-white to-gray-400 bg-clip-text text-transparent">Research Agent</span>
+                </a>
+                <div class="hidden md:flex items-center gap-1 text-sm">
+                    <a href="/dashboard" class="px-3 py-1.5 text-gray-400 hover:text-white rounded-lg hover:bg-white/5 transition-all">Dashboard</a>
+                    <a href="/papers" class="px-3 py-1.5 text-gray-400 hover:text-white rounded-lg hover:bg-white/5 transition-all">Papers</a>
+                    <a href="/research" class="px-3 py-1.5 text-white bg-white/10 rounded-lg">Research</a>
+                </div>
+            </div>
+            <div class="flex items-center gap-4">
+                <span id="user-greeting" class="text-sm text-gray-400"></span>
+                <button onclick="Auth.logout()" class="px-4 py-2 text-sm font-medium text-gray-400 hover:text-white border border-white/10 hover:border-white/20 rounded-lg transition-all">Sign Out</button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Conversational Workspace -->
+    <div class="flex-1 flex overflow-hidden">
+        <!-- Sidebar Panel: Sessions list -->
+        <aside class="w-80 border-r border-white/5 bg-surface-950/40 backdrop-blur-xl flex flex-col flex-shrink-0">
+            <!-- Action Header -->
+            <div class="p-4 border-b border-white/5">
+                <button onclick="createSession()" class="w-full py-3 bg-gradient-to-r from-purple-600 to-brand-500 hover:from-purple-500 hover:to-brand-400 text-white font-semibold rounded-xl transition-all shadow-lg shadow-purple-500/25 flex items-center justify-center gap-2 text-xs">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+                    New Chat Session
+                </button>
+            </div>
+
+            <!-- List viewport -->
+            <div class="flex-1 overflow-y-auto p-3 space-y-1.5" id="session-list">
+                <div class="text-center text-xs text-gray-500 py-10">Loading sessions...</div>
+            </div>
+        </aside>
+
+        <!-- Main Chat Panel -->
+        <div class="flex-1 flex flex-col overflow-hidden bg-surface-950/10">
+            
+            <!-- Empty state (Initial load screen) -->
+            <div id="empty-state" class="flex-1 flex flex-col items-center justify-center p-8 text-center overflow-y-auto">
+                <div class="w-20 h-20 rounded-2xl bg-purple-500/10 flex items-center justify-center mb-6">
+                    <svg class="w-10 h-10 text-purple-400 animate-pulse-glow rounded-2xl" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"></path></svg>
+                </div>
+                <h3 class="text-2xl font-bold text-white mb-2">AI Research Assistant</h3>
+                <p class="text-gray-400 max-w-md mx-auto mb-6 text-sm">Select an active session from the sidebar or click "New Session" to start a continuous, conversational research session with citation audits.</p>
+                <div class="flex flex-col gap-2 max-w-xs w-full" id="starter-buttons">
+                    <button onclick="createSession()" class="px-5 py-3 border border-purple-500/20 hover:border-purple-500/40 bg-purple-500/5 hover:bg-purple-500/10 text-purple-300 font-medium rounded-xl transition-all text-sm shadow-md">
+                        Create New Chat Session
+                    </button>
+                </div>
+            </div>
+
+            <!-- Active chat viewport -->
+            <div id="chat-workspace" class="hidden flex-1 flex flex-col overflow-hidden">
+                <!-- Session header -->
+                <div class="px-6 py-4 border-b border-white/5 bg-surface-950/20 flex items-center justify-between flex-shrink-0">
+                    <div>
+                        <h2 id="current-session-title" class="text-sm font-bold text-white max-w-lg truncate">New Research Session</h2>
+                        <p class="text-[11px] text-gray-500 mt-0.5" id="current-session-meta">Active chat thread</p>
+                    </div>
+                </div>
+
+                <!-- Chat history viewport -->
+                <div class="flex-1 overflow-y-auto px-6 py-6 space-y-6 flex flex-col" id="message-history">
+                    <!-- Dynamic turns go here -->
+                </div>
+
+                <!-- Actionable trace loader -->
+                <div id="trace-indicator" class="hidden px-6 py-3 border-t border-white/5 bg-surface-950/40 flex-shrink-0">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center gap-3">
+                            <svg class="w-4 h-4 text-purple-400 animate-spin" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" fill="none"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg>
+                            <span id="trace-step-text" class="text-xs text-gray-300 font-medium">Agents coordinating...</span>
+                        </div>
+                        <span id="trace-step-meta" class="text-[10px] text-gray-500 uppercase tracking-wider font-semibold">Formulating plan</span>
+                    </div>
+                    <!-- Micro progress indicator bar -->
+                    <div class="w-full bg-white/5 h-1 rounded-full overflow-hidden mt-2 relative">
+                        <div id="trace-progress-bar" class="bg-gradient-to-r from-purple-500 to-brand-500 h-full w-[10%] transition-all duration-300"></div>
+                    </div>
+                </div>
+
+                <!-- Chat input deck -->
+                <div class="p-6 border-t border-white/5 bg-surface-950/30 flex-shrink-0">
+                    <form id="research-form" class="relative">
+                        <div class="relative group">
+                            <div class="absolute inset-0 bg-gradient-to-r from-purple-500/10 to-brand-500/10 rounded-2xl blur-xl opacity-0 group-focus-within:opacity-100 transition-opacity duration-500"></div>
+                            <div class="relative bg-white/[0.04] border border-white/[0.08] rounded-2xl focus-within:border-purple-500/40 transition-all flex flex-col">
+                                <textarea id="query-input" rows="2" placeholder="Ask a follow-up question or start a new topic..." class="w-full bg-transparent px-5 py-4 text-white placeholder-gray-500 focus:outline-none text-sm resize-none"></textarea>
+                                <div class="flex items-center justify-between px-5 pb-3 pt-1">
+                                    <span id="char-count" class="text-xs text-gray-600">0 chars</span>
+                                    <button type="submit" id="research-btn" class="px-5 py-2 bg-gradient-to-r from-purple-600 to-brand-500 hover:from-purple-500 hover:to-brand-400 text-white text-xs font-semibold rounded-lg transition-all shadow-md shadow-purple-500/10 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1.5">
+                                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"></path></svg>
+                                        Send Message
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    if (!Auth.isAuthenticated()) { window.location.href = '/login'; return; }
+    const user = Auth.getUser();
+    if (user) document.getElementById('user-greeting').textContent = 'Hello, ' + user.username;
+
+    // Load sessions initially
+    loadSessions();
+
+    const form = document.getElementById('research-form');
+    const input = document.getElementById('query-input');
+    const btn = document.getElementById('research-btn');
+    const charCount = document.getElementById('char-count');
+
+    input.addEventListener('input', () => { charCount.textContent = input.value.length + ' chars'; });
+
+    form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const query = input.value.trim();
+        if (query.length < 5 || !activeSessionId) return;
+
+        btn.disabled = true;
+        input.disabled = true;
+        btn.style.opacity = '0.5';
+
+        // Clear input field instantly
+        input.value = '';
+        charCount.textContent = '0 chars';
+
+        // Render user message instantly
+        const userMsg = {
+            role: 'user',
+            content: query
+        };
+        const historyContainer = document.getElementById('message-history');
+        const initialText = historyContainer.querySelector('.font-medium');
+        if (initialText) {
+            historyContainer.innerHTML = '';
+        }
+        historyContainer.innerHTML += renderMessage(userMsg);
+        scrollChatToBottom();
+
+        // Launch trace indicator
+        const traceIndicator = document.getElementById('trace-indicator');
+        const traceText = document.getElementById('trace-step-text');
+        const traceMeta = document.getElementById('trace-step-meta');
+        const traceBar = document.getElementById('trace-progress-bar');
+        
+        traceIndicator.classList.remove('hidden');
+        traceText.textContent = 'Planning multi-agent execution strategy...';
+        traceMeta.textContent = 'Planner Agent';
+        traceBar.style.width = '15%';
+
+        // Dynamic trace loading mock
+        let steps = [
+            { text: 'Formulating planner execution tasks...', meta: 'Planner Agent', width: '25%' },
+            { text: 'Executing Reciprocal Rank Fusion retrieval...', meta: 'Retrieval Agent', width: '45%' },
+            { text: 'Analyzing methodology insights & baselines...', meta: 'Analysis Agent', width: '70%' },
+            { text: 'Drafting structured research summary report...', meta: 'Summarizer Agent', width: '85%' },
+            { text: 'Verifying factual grounding of all claims...', meta: 'Critic Agent', width: '95%' }
+        ];
+        let stepIdx = 0;
+        let stepInterval = setInterval(() => {
+            if (stepIdx < steps.length) {
+                traceText.textContent = steps[stepIdx].text;
+                traceMeta.textContent = steps[stepIdx].meta;
+                traceBar.style.width = steps[stepIdx].width;
+                stepIdx++;
+            }
+        }, 2800);
+
+        try {
+            const resp = await API.post(`/sessions/${activeSessionId}/research`, { query });
+            
+            clearInterval(stepInterval);
+            traceIndicator.classList.add('hidden');
+            
+            historyContainer.innerHTML += renderMessage(resp.data);
+            scrollChatToBottom();
+            
+            // Reload sidebar list to show updated title
+            await loadSessions();
+            
+            // Re-fetch details to ensure correct title in workspace header
+            const sResp = await API.get(`/sessions/${activeSessionId}`);
+            document.getElementById('current-session-title').textContent = sResp.data.session.title;
+            
+        } catch (err) {
+            clearInterval(stepInterval);
+            traceIndicator.classList.add('hidden');
+            showToast(err.message || 'Research failed', 'error');
+            
+            historyContainer.innerHTML += `
+                <div class="flex flex-col space-y-2 max-w-[90%] self-start w-full animate-slide-up">
+                    <span class="text-xs text-red-500 font-semibold pl-1">RESEARCH EXCEPTION</span>
+                    <div class="p-4 rounded-xl border border-red-500/20 bg-red-500/5 text-xs text-red-400 shadow-lg">
+                        Failed to execute agent turns: ${esc(err.message || 'Server timeout or connection issues.')}
+                    </div>
+                </div>
+            `;
+            scrollChatToBottom();
+        } finally {
+            btn.disabled = false;
+            input.disabled = false;
+            btn.style.opacity = '1';
+            input.focus();
+        }
+    });
+
+    // Submit query on Ctrl+Enter
+    input.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) { e.preventDefault(); form.dispatchEvent(new Event('submit')); }
+    });
+});
+
+let activeSessionId = null;
+
+async function loadSessions() {
+    try {
+        const resp = await API.get('/sessions/');
+        const list = document.getElementById('session-list');
+        const sessions = resp.data.sessions || [];
+        
+        if (sessions.length === 0) {
+            list.innerHTML = `
+                <div class="text-center text-xs text-gray-500 py-12 px-4">
+                    No active chat threads. Click "+ New Chat Session" to start.
+                </div>
+            `;
+            return;
+        }
+        
+        list.innerHTML = sessions.map(s => {
+            const isActive = s.id === activeSessionId;
+            const activeClass = isActive 
+                ? 'bg-purple-500/10 border-purple-500/20 text-white' 
+                : 'border-transparent text-gray-400 hover:text-white hover:bg-white/[0.02]';
+            
+            return `
+                <div onclick="selectSession(${s.id})" class="group flex items-center justify-between px-3.5 py-3 rounded-xl border text-xs font-semibold transition-all cursor-pointer ${activeClass}">
+                    <div class="flex items-center gap-2.5 truncate w-full pr-2">
+                        <svg class="w-3.5 h-3.5 text-purple-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path></svg>
+                        <span class="truncate pr-1">${esc(s.title)}</span>
+                    </div>
+                    <button onclick="event.stopPropagation(); deleteSession(${s.id})" class="opacity-0 group-hover:opacity-100 text-gray-500 hover:text-red-400 transition-opacity p-1 rounded hover:bg-white/5">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                    </button>
+                </div>
+            `;
+        }).join('');
+        
+    } catch (err) {
+        showToast('Failed to load session details', 'error');
+    }
+}
+
+async function createSession() {
+    try {
+        const resp = await API.post('/sessions/', { title: 'New Research Session' });
+        activeSessionId = resp.data.id;
+        await loadSessions();
+        selectSession(activeSessionId);
+    } catch (err) {
+        showToast('Failed to create session', 'error');
+    }
+}
+
+async function deleteSession(id) {
+    if (!confirm('Are you sure you want to delete this research session thread?')) return;
+    try {
+        await API.delete(`/sessions/${id}`);
+        showToast('Session deleted successfully', 'success');
+        if (activeSessionId === id) {
+            activeSessionId = null;
+            document.getElementById('chat-workspace').classList.add('hidden');
+            document.getElementById('empty-state').classList.remove('hidden');
+        }
+        await loadSessions();
+    } catch (err) {
+        showToast('Failed to delete session', 'error');
+    }
+}
+
+async function selectSession(id) {
+    activeSessionId = id;
+    document.getElementById('empty-state').classList.add('hidden');
+    document.getElementById('chat-workspace').classList.remove('hidden');
+    
+    await loadSessions();
+    
+    try {
+        const resp = await API.get(`/sessions/${id}`);
+        const session = resp.data.session;
+        const messages = resp.data.messages || [];
+        
+        document.getElementById('current-session-title').textContent = session.title;
+        document.getElementById('current-session-meta').textContent = `Thread started on ${new Date(session.created_at).toLocaleDateString()}`;
+        
+        const historyContainer = document.getElementById('message-history');
+        if (messages.length === 0) {
+            historyContainer.innerHTML = `
+                <div class="text-center text-xs text-gray-500 py-20 flex-1 flex flex-col items-center justify-center animate-fade-in">
+                    <div class="w-12 h-12 bg-white/[0.02] border border-white/[0.04] rounded-xl flex items-center justify-center mb-4">
+                        <svg class="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path></svg>
+                    </div>
+                    <span class="font-bold text-gray-400 text-sm">Start your conversation</span>
+                    <p class="text-xs text-gray-600 mt-1 max-w-xs leading-relaxed">Ask a research question below. The Multi-Agent Planner will rewrite it contextually using chat history and fetch citation-backed metrics.</p>
+                </div>
+            `;
+            return;
+        }
+        
+        historyContainer.innerHTML = messages.map(m => renderMessage(m)).join('');
+        scrollChatToBottom();
+        
+    } catch (err) {
+        showToast('Failed to load thread details', 'error');
+    }
+}
+
+function renderMessage(m) {
+    if (m.role === 'user') {
+        return `
+            <div class="flex flex-col space-y-1.5 max-w-[80%] self-end animate-slide-up">
+                <span class="text-[10px] text-gray-500 font-bold self-end pr-1 uppercase tracking-wider">YOU</span>
+                <div class="bg-purple-600/10 border border-purple-500/20 rounded-2xl rounded-tr-none px-5 py-3.5 text-sm text-white">
+                    ${esc(m.content)}
+                </div>
+            </div>
+        `;
+    } else {
+        let data = {};
+        if (m.agent_data) {
+            if (typeof m.agent_data === 'string') {
+                try { data = JSON.parse(m.agent_data); } catch(e) { data = {}; }
+            } else {
+                data = m.agent_data;
+            }
+        }
+        const trace = data.trace || [];
+        const plan = data.plan || {};
+        const critic = data.critic;
+        const passages = data.passages || [];
+        const uniqueId = `details-${m.id || Math.floor(Math.random() * 100000)}`;
+
+        // Color coding for critic verdict
+        let verdictLabel = 'Not Evaluated';
+        let verdictClass = 'border-gray-500/10 bg-gray-500/5 text-gray-400';
+        if (critic) {
+            const verdictColors = { 
+                reliable:'border-emerald-500/20 bg-emerald-500/5 text-emerald-400', 
+                mostly_reliable:'border-blue-500/20 bg-blue-500/5 text-blue-400', 
+                partially_reliable:'border-amber-500/20 bg-amber-500/5 text-amber-400', 
+                unreliable:'border-red-500/20 bg-red-500/5 text-red-400' 
+            };
+            const verdictLabels = { 
+                reliable:'Reliable', 
+                mostly_reliable:'Mostly Reliable', 
+                partially_reliable:'Partially Reliable', 
+                unreliable:'Unreliable' 
+            };
+            verdictLabel = verdictLabels[critic.verdict] || critic.verdict;
+            verdictClass = verdictColors[critic.verdict] || verdictColors.partially_reliable;
+        }
+
+        // Trace list
+        const traceHtml = trace.map(t => {
+            const icon = t.success ? '✓' : '✗';
+            const color = t.success ? 'text-emerald-400' : 'text-red-400';
+            return `<span class="${color} text-[10px] font-bold inline-flex items-center gap-0.5"><span>${icon}</span> ${esc(t.agent)} (${Math.round(t.latency_ms)}ms)</span>`;
+        }).join('<span class="text-gray-700 text-xs px-1">➔</span>');
+
+        // Passages list
+        const passagesHtml = passages.map((p, i) => `
+            <div class="p-3.5 rounded-xl bg-white/[0.01] border border-white/[0.04] text-xs">
+                <div class="flex items-center justify-between mb-1.5">
+                    <span class="text-brand-400 font-bold">[${i+1}] ${esc(p.paper_title || 'Reference')}</span>
+                    <span class="text-gray-500">${esc(p.section || '')} ${p.page ? '• Page '+p.page : ''}</span>
+                </div>
+                <p class="text-gray-400 leading-relaxed">${esc(p.text || '')}</p>
+            </div>
+        `).join('');
+
+        // Critic Issues
+        let criticIssuesHtml = '';
+        if (critic && critic.issues && critic.issues.length > 0) {
+            criticIssuesHtml = `
+                <div class="mt-3.5 space-y-2">
+                    <h4 class="text-[10px] font-bold text-red-400/80 tracking-wider">CRITIC ALERTS</h4>
+                    ${critic.issues.map(i => `
+                        <div class="p-3 rounded-xl bg-red-500/[0.02] border border-red-500/10 text-xs">
+                            <span class="px-2 py-0.5 rounded-full bg-red-500/10 text-red-400 border border-red-500/20 text-[9px] font-bold uppercase tracking-wider">${esc(i.type)}</span>
+                            <p class="text-gray-300 font-bold mt-1.5">${esc(i.claim)}</p>
+                            <p class="text-gray-500 mt-1">${esc(i.explanation)}</p>
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+        }
+
+        return `
+            <div class="flex flex-col space-y-2 max-w-[90%] self-start w-full animate-slide-up">
+                <span class="text-[10px] text-gray-500 font-bold pl-1 uppercase tracking-wider">RESEARCH ENGINE REPORT</span>
+                
+                <div class="bg-white/[0.02] border border-white/[0.06] rounded-2xl rounded-tl-none p-6 text-sm text-gray-300 shadow-xl shadow-black/10 relative">
+                    
+                    <!-- Report markdown content -->
+                    <div class="prose prose-invert prose-sm max-w-none text-gray-300 leading-relaxed">
+                        ${markdownToHtml(m.content)}
+                    </div>
+
+                    <!-- Collapsible audit trace -->
+                    <div class="mt-6 border-t border-white/5 pt-4">
+                        <button onclick="toggleSection('${uniqueId}')" class="flex items-center justify-between w-full py-1 text-xs text-gray-500 hover:text-gray-300 font-semibold transition-all">
+                            <span class="flex items-center gap-1.5">
+                                <svg class="w-3.5 h-3.5 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path></svg>
+                                Research Agent Audit Trace
+                            </span>
+                            <svg class="w-3.5 h-3.5 transition-transform" id="arrow-${uniqueId}" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                        </button>
+                        
+                        <div id="${uniqueId}" class="hidden mt-4 space-y-4 border-t border-white/[0.03] pt-4 animate-fade-in">
+                            
+                            <!-- Trace Details -->
+                            <div class="bg-white/[0.01] border border-white/[0.03] p-3 rounded-xl flex items-center justify-between flex-wrap gap-2">
+                                <div class="flex items-center gap-1 flex-wrap">${traceHtml}</div>
+                                <span class="text-[9px] text-gray-500 font-bold">${data.total_time_ms ? data.total_time_ms + 'ms' : ''}</span>
+                            </div>
+
+                            <!-- Critic block -->
+                            ${critic ? `
+                                <div class="p-4 rounded-xl border ${verdictClass} flex flex-col">
+                                    <div class="flex items-center justify-between mb-2">
+                                        <span class="text-xs font-semibold text-white">Critic Verification</span>
+                                        <span class="px-2.5 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider bg-white/5 border border-white/10">${verdictLabel}</span>
+                                    </div>
+                                    <div class="text-xs text-gray-400">Grounding Score: <span class="text-white font-semibold">${((critic.grounding_score||0)*100).toFixed(0)}%</span></div>
+                                    ${critic.suggestions ? `<p class="text-xs text-gray-400 mt-2 italic">Suggestions: "${esc(critic.suggestions)}"</p>` : ''}
+                                    ${criticIssuesHtml}
+                                </div>
+                            ` : ''}
+
+                            <!-- Source Passages -->
+                            ${passages.length > 0 ? `
+                                <div class="space-y-2">
+                                    <h4 class="text-[10px] font-bold text-gray-500 tracking-wider">SOURCE PASSAGES</h4>
+                                    <div class="space-y-2">${passagesHtml}</div>
+                                </div>
+                            ` : ''}
+
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+}
+
+function scrollChatToBottom() {
+    const container = document.getElementById('message-history');
+    container.scrollTo({ top: container.scrollHeight, behavior: 'smooth' });
+}
+
+function toggleSection(id) {
+    const el = document.getElementById(id);
+    const arrow = document.getElementById(`arrow-${id}`);
+    if (el.classList.contains('hidden')) {
+        el.classList.remove('hidden');
+        arrow.style.transform = 'rotate(180deg)';
+    } else {
+        el.classList.add('hidden');
+        arrow.style.transform = 'rotate(0deg)';
+    }
+}
+
+function esc(t) { if(!t)return''; const d=document.createElement('div'); d.textContent=t; return d.innerHTML; }
+
+function markdownToHtml(md) {
+    if (!md) return '';
+    return md
+        .replace(/^### (.+)$/gm, '<h3 class="text-base font-bold text-white mt-5 mb-2">$1</h3>')
+        .replace(/^## (.+)$/gm, '<h2 class="text-lg font-bold text-white mt-5 mb-2.5">$1</h2>')
+        .replace(/^# (.+)$/gm, '<h1 class="text-xl font-extrabold text-white mt-6 mb-3">$1</h1>')
+        .replace(/\*\*(.+?)\*\*/g, '<strong class="text-white font-semibold">$1</strong>')
+        .replace(/\*(.+?)\*/g, '<em>$1</em>')
+        .replace(/^- (.+)$/gm, '<li class="ml-4 text-gray-300">$1</li>')
+        .replace(/(<li.*<\/li>\n?)+/g, '<ul class="space-y-1 my-2">$&</ul>')
+        .replace(/\n\n/g, '</p><p class="text-sm text-gray-300 leading-relaxed mt-3">')
+        .replace(/^/, '<p class="text-sm text-gray-300 leading-relaxed">')
+        .replace(/$/, '</p>');
+}
+
+function showToast(msg, type='info') {
+    const container = document.getElementById('toast-container');
+    const toast = document.createElement('div');
+    const colors = {info:'border-brand-500/40 bg-brand-500/10 text-brand-200', error:'border-red-500/40 bg-red-500/10 text-red-200', success:'border-emerald-500/40 bg-emerald-500/10 text-emerald-200'};
+    toast.className = `px-5 py-3 rounded-xl border backdrop-blur-xl text-sm animate-slide-up ${colors[type]||colors.info}`;
+    toast.textContent = msg;
+    container.appendChild(toast);
+    setTimeout(() => toast.remove(), 5000);
+}
+</script>
+{% endblock %}

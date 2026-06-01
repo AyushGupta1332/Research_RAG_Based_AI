@@ -1,0 +1,26 @@
+[
+  {
+    "query": "Which datasets are used for training Aegis DLP?",
+    "expected_paper_title": "Aegis DLP: A Unified Endpoint Security Platform with Deep Learning-Based Threat Detection",
+    "expected_section": "4.2.3 Dataset Normalization",
+    "query_type": "dataset"
+  },
+  {
+    "query": "What model architecture is optimized for phishing detection?",
+    "expected_paper_title": "Aegis DLP: A Unified Endpoint Security Platform with Deep Learning-Based Threat Detection",
+    "expected_section": "5.3 Model Architecture",
+    "query_type": "architecture"
+  },
+  {
+    "query": "how is the combined dataset normalized and balanced?",
+    "expected_paper_title": "Aegis DLP: A Unified Endpoint Security Platform with Deep Learning-Based Threat Detection",
+    "expected_section": "4.2.3 Dataset Normalization",
+    "query_type": "methodology"
+  },
+  {
+    "query": "intrusion detection system and machine learning zero-day limitations",
+    "expected_paper_title": "Aegis DLP: A Unified Endpoint Security Platform with Deep Learning-Based Threat Detection",
+    "expected_section": "2.2 Intrusion Detection Systems",
+    "query_type": "limitations"
+  }
+]

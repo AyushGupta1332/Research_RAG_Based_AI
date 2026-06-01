@@ -1,0 +1,259 @@
+{% extends "base.html" %}
+{% block title %}Upload Paper — Research Agent{% endblock %}
+{% block body %}
+<div class="min-h-screen flex flex-col">
+    <!-- Nav -->
+    <nav class="border-b border-white/5 backdrop-blur-xl bg-surface-950/80 sticky top-0 z-40">
+        <div class="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
+            <div class="flex items-center gap-6">
+                <a href="/dashboard" class="flex items-center gap-3">
+                    <div class="w-9 h-9 rounded-lg bg-gradient-to-br from-brand-500 to-purple-600 flex items-center justify-center shadow-lg shadow-brand-500/25">
+                        <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"></path></svg>
+                    </div>
+                    <span class="text-lg font-bold bg-gradient-to-r from-white to-gray-400 bg-clip-text text-transparent">Research Agent</span>
+                </a>
+                <div class="hidden md:flex items-center gap-1 text-sm">
+                    <a href="/dashboard" class="px-3 py-1.5 text-gray-400 hover:text-white rounded-lg hover:bg-white/5 transition-all">Dashboard</a>
+                    <a href="/papers" class="px-3 py-1.5 text-gray-400 hover:text-white rounded-lg hover:bg-white/5 transition-all">Papers</a>
+                    <a href="/upload" class="px-3 py-1.5 text-white bg-white/10 rounded-lg">Upload</a>
+                    <a href="/research" class="px-3 py-1.5 text-gray-400 hover:text-white rounded-lg hover:bg-white/5 transition-all">Research</a>
+                    <a href="/evaluation" class="px-3 py-1.5 text-gray-400 hover:text-white rounded-lg hover:bg-white/5 transition-all">Evaluation</a>
+                </div>
+            </div>
+            <button onclick="Auth.logout()" class="px-4 py-2 text-sm font-medium text-gray-400 hover:text-white border border-white/10 hover:border-white/20 rounded-lg transition-all">Sign Out</button>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="flex-1 max-w-4xl mx-auto w-full px-6 py-10">
+        <div class="mb-8 animate-fade-in">
+            <h1 class="text-3xl font-bold text-white mb-2">Upload Research Paper</h1>
+            <p class="text-gray-400">Upload a PDF and the system will automatically parse, extract sections, and chunk it for retrieval.</p>
+        </div>
+
+        <!-- Upload Area -->
+        <div id="upload-zone"
+             class="relative p-12 rounded-2xl bg-white/[0.03] border-2 border-dashed border-white/10 hover:border-brand-500/40 hover:bg-white/[0.05] transition-all duration-300 cursor-pointer text-center group animate-slide-up"
+             ondragover="handleDragOver(event)"
+             ondragleave="handleDragLeave(event)"
+             ondrop="handleDrop(event)"
+             onclick="document.getElementById('file-input').click()">
+
+            <input type="file" id="file-input" accept=".pdf" class="hidden" onchange="handleFileSelect(event)">
+
+            <div id="upload-prompt">
+                <div class="w-16 h-16 rounded-2xl bg-brand-500/10 flex items-center justify-center mx-auto mb-5 group-hover:bg-brand-500/20 transition-colors">
+                    <svg class="w-8 h-8 text-brand-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path></svg>
+                </div>
+                <p class="text-lg font-medium text-white mb-2">Drop your PDF here or click to browse</p>
+                <p class="text-sm text-gray-500">Supports research papers in PDF format (max 50 MB)</p>
+            </div>
+
+            <!-- Upload Progress (hidden by default) -->
+            <div id="upload-progress" class="hidden">
+                <div class="w-16 h-16 rounded-2xl bg-brand-500/10 flex items-center justify-center mx-auto mb-5">
+                    <svg class="w-8 h-8 text-brand-400 animate-spin" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" fill="none"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg>
+                </div>
+                <p class="text-lg font-medium text-white mb-2">Uploading...</p>
+                <p id="upload-file-name" class="text-sm text-gray-400 mb-4"></p>
+                <div class="w-full max-w-xs mx-auto bg-white/5 rounded-full h-2">
+                    <div id="upload-bar" class="bg-gradient-to-r from-brand-500 to-purple-500 h-2 rounded-full transition-all duration-300" style="width: 0%"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Upload Success (hidden by default) -->
+        <div id="upload-success" class="hidden mt-6 p-6 rounded-2xl bg-emerald-500/5 border border-emerald-500/20 animate-slide-up">
+            <div class="flex items-start gap-4">
+                <div class="w-10 h-10 rounded-xl bg-emerald-500/10 flex items-center justify-center flex-shrink-0">
+                    <svg class="w-5 h-5 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                </div>
+                <div class="flex-1">
+                    <h3 class="text-lg font-semibold text-white mb-1">Upload Successful!</h3>
+                    <p class="text-sm text-gray-400 mb-3">Your paper is being processed in the background. Sections and chunks will be ready shortly.</p>
+                    <div id="upload-result-info" class="text-sm text-gray-300 space-y-1"></div>
+                    <div class="mt-4 flex gap-3">
+                        <a id="view-paper-link" href="#" class="px-4 py-2 text-sm font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 rounded-lg hover:bg-emerald-500/20 transition-all">View Paper</a>
+                        <button onclick="resetUpload()" class="px-4 py-2 text-sm font-medium text-gray-400 border border-white/10 rounded-lg hover:bg-white/5 transition-all">Upload Another</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Upload Error (hidden by default) -->
+        <div id="upload-error" class="hidden mt-6 p-6 rounded-2xl bg-red-500/5 border border-red-500/20">
+            <div class="flex items-start gap-4">
+                <div class="w-10 h-10 rounded-xl bg-red-500/10 flex items-center justify-center flex-shrink-0">
+                    <svg class="w-5 h-5 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                </div>
+                <div>
+                    <h3 class="text-lg font-semibold text-white mb-1">Upload Failed</h3>
+                    <p id="upload-error-msg" class="text-sm text-red-400"></p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Recent Uploads -->
+        <div class="mt-10">
+            <h2 class="text-xl font-semibold text-white mb-4">Recent Uploads</h2>
+            <div id="recent-papers" class="space-y-3">
+                <p class="text-gray-500 text-sm">Loading...</p>
+            </div>
+        </div>
+    </main>
+</div>
+
+<script>
+if (!Auth.isAuthenticated()) window.location.href = '/login';
+
+// ── Drag and Drop ────────────────────────────────────────────
+function handleDragOver(e) {
+    e.preventDefault();
+    e.currentTarget.classList.add('border-brand-500/60', 'bg-brand-500/5');
+}
+
+function handleDragLeave(e) {
+    e.preventDefault();
+    e.currentTarget.classList.remove('border-brand-500/60', 'bg-brand-500/5');
+}
+
+function handleDrop(e) {
+    e.preventDefault();
+    e.currentTarget.classList.remove('border-brand-500/60', 'bg-brand-500/5');
+    const files = e.dataTransfer.files;
+    if (files.length > 0) uploadFile(files[0]);
+}
+
+function handleFileSelect(e) {
+    const files = e.target.files;
+    if (files.length > 0) uploadFile(files[0]);
+}
+
+// ── Upload Logic ─────────────────────────────────────────────
+async function uploadFile(file) {
+    if (!file.name.toLowerCase().endsWith('.pdf')) {
+        showUploadError('Only PDF files are accepted.');
+        return;
+    }
+    if (file.size > 50 * 1024 * 1024) {
+        showUploadError('File exceeds 50 MB limit.');
+        return;
+    }
+
+    // Show progress
+    document.getElementById('upload-prompt').classList.add('hidden');
+    document.getElementById('upload-progress').classList.remove('hidden');
+    document.getElementById('upload-file-name').textContent = file.name;
+    document.getElementById('upload-error').classList.add('hidden');
+    document.getElementById('upload-success').classList.add('hidden');
+
+    const formData = new FormData();
+    formData.append('file', file);
+
+    try {
+        const token = localStorage.getItem('access_token');
+        const xhr = new XMLHttpRequest();
+
+        xhr.upload.onprogress = (e) => {
+            if (e.lengthComputable) {
+                const pct = Math.round((e.loaded / e.total) * 100);
+                document.getElementById('upload-bar').style.width = pct + '%';
+            }
+        };
+
+        const result = await new Promise((resolve, reject) => {
+            xhr.onload = () => {
+                const data = JSON.parse(xhr.responseText);
+                if (xhr.status >= 200 && xhr.status < 300) resolve(data);
+                else reject(data);
+            };
+            xhr.onerror = () => reject({ message: 'Network error' });
+            xhr.open('POST', '/api/papers/upload');
+            xhr.setRequestHeader('Authorization', 'Bearer ' + token);
+            xhr.send(formData);
+        });
+
+        // Show success
+        showUploadSuccess(result.data.paper);
+        loadRecentPapers();
+
+    } catch (error) {
+        showUploadError(error.message || 'Upload failed');
+    }
+}
+
+function showUploadSuccess(paper) {
+    document.getElementById('upload-progress').classList.add('hidden');
+    document.getElementById('upload-prompt').classList.remove('hidden');
+    document.getElementById('upload-success').classList.remove('hidden');
+    document.getElementById('upload-result-info').innerHTML = `
+        <p><span class="text-gray-500">Title:</span> ${paper.title || paper.file_name}</p>
+        <p><span class="text-gray-500">Status:</span> <span class="text-amber-400">${paper.status}</span></p>
+        <p><span class="text-gray-500">File:</span> ${paper.file_name} (${formatBytes(paper.file_size)})</p>
+    `;
+    document.getElementById('view-paper-link').href = '/papers/' + paper.id;
+}
+
+function showUploadError(msg) {
+    document.getElementById('upload-progress').classList.add('hidden');
+    document.getElementById('upload-prompt').classList.remove('hidden');
+    document.getElementById('upload-error').classList.remove('hidden');
+    document.getElementById('upload-error-msg').textContent = msg;
+}
+
+function resetUpload() {
+    document.getElementById('upload-success').classList.add('hidden');
+    document.getElementById('upload-error').classList.add('hidden');
+    document.getElementById('file-input').value = '';
+}
+
+// ── Recent Papers ────────────────────────────────────────────
+async function loadRecentPapers() {
+    try {
+        const data = await API.get('/papers/?per_page=5');
+        const container = document.getElementById('recent-papers');
+        const papers = data.data.papers;
+
+        if (papers.length === 0) {
+            container.innerHTML = '<p class="text-gray-500 text-sm">No papers uploaded yet.</p>';
+            return;
+        }
+
+        container.innerHTML = papers.map(p => `
+            <a href="/papers/${p.id}" class="block p-4 rounded-xl bg-white/[0.03] border border-white/[0.06] hover:border-brand-500/30 hover:bg-white/[0.05] transition-all">
+                <div class="flex items-center justify-between">
+                    <div class="flex-1 min-w-0">
+                        <h4 class="text-sm font-medium text-white truncate">${p.title || p.file_name}</h4>
+                        <p class="text-xs text-gray-500 mt-1">${formatBytes(p.file_size)} &middot; ${p.page_count || '?'} pages &middot; ${p.chunk_count} chunks</p>
+                    </div>
+                    <span class="ml-4 px-2.5 py-1 text-xs font-medium rounded-full ${statusColor(p.status)}">${p.status}</span>
+                </div>
+            </a>
+        `).join('');
+    } catch (e) {
+        document.getElementById('recent-papers').innerHTML = '<p class="text-red-400 text-sm">Failed to load papers.</p>';
+    }
+}
+
+function statusColor(status) {
+    const colors = {
+        uploaded: 'bg-amber-500/10 text-amber-400',
+        processing: 'bg-blue-500/10 text-blue-400',
+        completed: 'bg-emerald-500/10 text-emerald-400',
+        failed: 'bg-red-500/10 text-red-400',
+    };
+    return colors[status] || 'bg-gray-500/10 text-gray-400';
+}
+
+function formatBytes(bytes) {
+    if (!bytes) return '0 B';
+    const k = 1024;
+    const sizes = ['B', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
+}
+
+// Load recent papers on page load
+document.addEventListener('DOMContentLoaded', loadRecentPapers);
+</script>
+{% endblock %}

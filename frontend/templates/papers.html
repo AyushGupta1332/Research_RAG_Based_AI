@@ -1,0 +1,147 @@
+{% extends "base.html" %}
+{% block title %}Papers Library — Research Agent{% endblock %}
+{% block body %}
+<div class="min-h-screen flex flex-col">
+    <nav class="border-b border-white/5 backdrop-blur-xl bg-surface-950/80 sticky top-0 z-40">
+        <div class="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
+            <div class="flex items-center gap-6">
+                <a href="/dashboard" class="flex items-center gap-3">
+                    <div class="w-9 h-9 rounded-lg bg-gradient-to-br from-brand-500 to-purple-600 flex items-center justify-center shadow-lg shadow-brand-500/25">
+                        <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"></path></svg>
+                    </div>
+                    <span class="text-lg font-bold bg-gradient-to-r from-white to-gray-400 bg-clip-text text-transparent">Research Agent</span>
+                </a>
+                <div class="hidden md:flex items-center gap-1 text-sm">
+                    <a href="/dashboard" class="px-3 py-1.5 text-gray-400 hover:text-white rounded-lg hover:bg-white/5 transition-all">Dashboard</a>
+                    <a href="/papers" class="px-3 py-1.5 text-white bg-white/10 rounded-lg">Papers</a>
+                    <a href="/upload" class="px-3 py-1.5 text-gray-400 hover:text-white rounded-lg hover:bg-white/5 transition-all">Upload</a>
+                    <a href="/research" class="px-3 py-1.5 text-gray-400 hover:text-white rounded-lg hover:bg-white/5 transition-all">Research</a>
+                    <a href="/evaluation" class="px-3 py-1.5 text-gray-400 hover:text-white rounded-lg hover:bg-white/5 transition-all">Evaluation</a>
+                </div>
+            </div>
+            <button onclick="Auth.logout()" class="px-4 py-2 text-sm font-medium text-gray-400 hover:text-white border border-white/10 hover:border-white/20 rounded-lg transition-all">Sign Out</button>
+        </div>
+    </nav>
+
+    <main class="flex-1 max-w-7xl mx-auto w-full px-6 py-10">
+        <div class="flex items-center justify-between mb-8 animate-fade-in">
+            <div>
+                <h1 class="text-3xl font-bold text-white mb-2">Papers Library</h1>
+                <p class="text-gray-400">All your uploaded research papers and their processing status.</p>
+            </div>
+            <a href="/upload" class="px-5 py-2.5 text-sm font-semibold bg-gradient-to-r from-brand-600 to-purple-600 hover:from-brand-500 hover:to-purple-500 rounded-lg text-white shadow-lg shadow-brand-600/25 transition-all flex items-center gap-2">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+                Upload
+            </a>
+        </div>
+
+        <!-- Filter Tabs -->
+        <div class="flex gap-2 mb-6">
+            <button onclick="filterPapers('all')" id="filter-all" class="px-4 py-2 text-sm font-medium rounded-lg bg-white/10 text-white transition-all">All</button>
+            <button onclick="filterPapers('completed')" id="filter-completed" class="px-4 py-2 text-sm font-medium rounded-lg text-gray-400 hover:bg-white/5 transition-all">Completed</button>
+            <button onclick="filterPapers('processing')" id="filter-processing" class="px-4 py-2 text-sm font-medium rounded-lg text-gray-400 hover:bg-white/5 transition-all">Processing</button>
+            <button onclick="filterPapers('failed')" id="filter-failed" class="px-4 py-2 text-sm font-medium rounded-lg text-gray-400 hover:bg-white/5 transition-all">Failed</button>
+        </div>
+
+        <!-- Papers Grid -->
+        <div id="papers-grid" class="grid grid-cols-1 md:grid-cols-2 gap-4 animate-slide-up">
+            <p class="text-gray-500 text-sm col-span-2">Loading...</p>
+        </div>
+
+        <!-- Pagination -->
+        <div id="pagination" class="mt-8 flex items-center justify-center gap-3 hidden"></div>
+    </main>
+</div>
+
+<script>
+if (!Auth.isAuthenticated()) window.location.href = '/login';
+
+let currentFilter = 'all';
+let currentPage = 1;
+
+async function loadPapers(page = 1, status = null) {
+    currentPage = page;
+    const params = new URLSearchParams({ page, per_page: 12 });
+    if (status && status !== 'all') params.append('status', status);
+
+    try {
+        const data = await API.get('/papers/?' + params.toString());
+        renderPapers(data.data);
+    } catch (e) {
+        document.getElementById('papers-grid').innerHTML = '<p class="text-red-400 text-sm col-span-2">Failed to load papers.</p>';
+    }
+}
+
+function renderPapers(data) {
+    const grid = document.getElementById('papers-grid');
+    const papers = data.papers;
+
+    if (papers.length === 0) {
+        grid.innerHTML = `
+            <div class="col-span-2 text-center py-16">
+                <div class="w-16 h-16 rounded-2xl bg-white/5 flex items-center justify-center mx-auto mb-4">
+                    <svg class="w-8 h-8 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                </div>
+                <p class="text-gray-400 mb-2">No papers found</p>
+                <a href="/upload" class="text-sm text-brand-400 hover:text-brand-300">Upload your first paper</a>
+            </div>`;
+        document.getElementById('pagination').classList.add('hidden');
+        return;
+    }
+
+    grid.innerHTML = papers.map(p => `
+        <a href="/papers/${p.id}" class="block p-5 rounded-2xl bg-white/[0.03] border border-white/[0.06] hover:border-brand-500/30 hover:bg-white/[0.05] transition-all group">
+            <div class="flex items-start justify-between mb-3">
+                <div class="w-10 h-10 rounded-xl bg-blue-500/10 flex items-center justify-center flex-shrink-0">
+                    <svg class="w-5 h-5 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                </div>
+                <span class="px-2.5 py-1 text-xs font-medium rounded-full ${statusColor(p.status)}">${p.status}</span>
+            </div>
+            <h3 class="text-white font-medium mb-1 line-clamp-2 group-hover:text-brand-300 transition-colors">${p.title || p.file_name}</h3>
+            <p class="text-xs text-gray-500 mb-3">${p.authors?.join(', ') || 'Authors pending...'}</p>
+            <div class="flex items-center gap-4 text-xs text-gray-500">
+                <span>${p.page_count || '?'} pages</span>
+                <span>${p.section_count} sections</span>
+                <span>${p.chunk_count} chunks</span>
+                <span>${formatBytes(p.file_size)}</span>
+            </div>
+        </a>
+    `).join('');
+
+    // Pagination
+    if (data.pages > 1) {
+        const pag = document.getElementById('pagination');
+        pag.classList.remove('hidden');
+        let html = '';
+        for (let i = 1; i <= data.pages; i++) {
+            const active = i === currentPage ? 'bg-brand-600 text-white' : 'bg-white/5 text-gray-400 hover:bg-white/10';
+            html += `<button onclick="loadPapers(${i}, '${currentFilter}')" class="w-9 h-9 rounded-lg text-sm font-medium ${active} transition-all">${i}</button>`;
+        }
+        pag.innerHTML = html;
+    } else {
+        document.getElementById('pagination').classList.add('hidden');
+    }
+}
+
+function filterPapers(status) {
+    currentFilter = status;
+    document.querySelectorAll('[id^="filter-"]').forEach(b => {
+        b.className = 'px-4 py-2 text-sm font-medium rounded-lg text-gray-400 hover:bg-white/5 transition-all';
+    });
+    document.getElementById('filter-' + status).className = 'px-4 py-2 text-sm font-medium rounded-lg bg-white/10 text-white transition-all';
+    loadPapers(1, status);
+}
+
+function statusColor(s) {
+    return { uploaded:'bg-amber-500/10 text-amber-400', processing:'bg-blue-500/10 text-blue-400', completed:'bg-emerald-500/10 text-emerald-400', failed:'bg-red-500/10 text-red-400' }[s] || 'bg-gray-500/10 text-gray-400';
+}
+
+function formatBytes(b) {
+    if (!b) return '0 B';
+    const k=1024, s=['B','KB','MB','GB'], i=Math.floor(Math.log(b)/Math.log(k));
+    return parseFloat((b/Math.pow(k,i)).toFixed(1))+' '+s[i];
+}
+
+document.addEventListener('DOMContentLoaded', () => loadPapers());
+</script>
+{% endblock %}
