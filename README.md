@@ -54,31 +54,6 @@ To guarantee the empirical quality of vector retrieval and the semantic fidelity
 
 ---
 
-## 📊 Evaluation & Retrieval Quality Metrics
-
-The system uses standard Information Retrieval (IR) metrics to mathematically grade searches over the top $K$ results (where $K=5$):
-
-### 1. Precision@K
-Calculates the fraction of retrieved chunks that are highly relevant to the query based on ground-truth document-section intersections:
-$$\text{Precision}@K = \frac{|\text{Relevant Chunks} \cap \text{Retrieved Chunks}|}{K}$$
-
-### 2. Recall@K
-Determines whether the expected ground-truth target chunk is successfully returned within the top-$K$ retrieved slots:
-$$\text{Recall}@K = \begin{cases} 1 & \text{if } \text{Relevant Chunks} \cap \text{Retrieved Chunks} \neq \emptyset \\ 0 & \text{otherwise} \end{cases}$$
-
-### 3. Mean Reciprocal Rank (MRR)
-Evaluates retrieval positioning quality by computing the reciprocal rank of the first relevant chunk found:
-$$\text{MRR} = \frac{1}{|Q|} \sum_{i=1}^{|Q|} \frac{1}{\text{Rank}_i}$$
-*Where $\text{Rank}_i$ is the 1-indexed position of the first matching chunk for query $i$. If no matching chunk is retrieved, the reciprocal rank is $0$.*
-
-### 4. Normalized Discounted Cumulative Gain (NDCG@K)
-Grades the search quality by discounting the usefulness (gain) of chunks based on their positional rank in the list:
-$$\text{DCG}@K = \sum_{i=1}^{K} \frac{rel_i}{\log_2(i + 1)}$$
-$$\text{NDCG}@K = \frac{\text{DCG}@K}{\text{IDCG}@K}$$
-*Where $rel_i \in \{0, 1\}$ represents binary relevance. $\text{IDCG}@K$ is the Ideal Discounted Cumulative Gain (the optimal ranking where all relevant chunks are at the top).*
-
----
-
 ## 📁 Technical Directory Structure
 
 ```
