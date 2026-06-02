@@ -118,8 +118,22 @@ def search(query_text, top_k=20):
     Returns:
         List of dicts: {id, chunk_id, text, score, paper_id, section_name, ...}
     """
-    if not _is_built or _bm25_index is None:
-        logger.warning("BM25 index not built — returning empty results")
+    global _is_built, _bm25_index
+    if not _is_built:
+        try:
+            logger.info("BM25 index not built yet. Lazy building index from database...")
+            from flask import current_app
+            app = None
+            try:
+                app = current_app._get_current_object()
+            except RuntimeError:
+                pass
+            build_index(app)
+        except Exception as e:
+            logger.error(f"Failed to lazy build BM25 index: {e}")
+
+    if _bm25_index is None:
+        logger.warning("BM25 index not built or empty — returning empty results")
         return []
 
     query_tokens = tokenize(query_text)

@@ -13,30 +13,31 @@ logger = logging.getLogger(__name__)
 
 
 # Common section headings found in research papers
+PREFIX = r'^(?:(?:[IVXLCDM]+|\d+)(?:\.\d+)*\.?\s+)?'
 SECTION_PATTERNS = [
-    r'^(?:\d+\.?\s+)?(abstract)$',
-    r'^(?:\d+\.?\s+)?(introduction)$',
-    r'^(?:\d+\.?\s+)?(related\s+work)$',
-    r'^(?:\d+\.?\s+)?(background)$',
-    r'^(?:\d+\.?\s+)?(literature\s+review)$',
-    r'^(?:\d+\.?\s+)?(methodology|methods?)$',
-    r'^(?:\d+\.?\s+)?(proposed\s+(?:method|approach|system|framework|model))$',
-    r'^(?:\d+\.?\s+)?(system\s+(?:design|architecture|overview))$',
-    r'^(?:\d+\.?\s+)?(experiment(?:s|al)?(?:\s+(?:setup|results|design))?)$',
-    r'^(?:\d+\.?\s+)?(results?\s*(?:and\s+)?(?:discussion|analysis)?)$',
-    r'^(?:\d+\.?\s+)?(discussion)$',
-    r'^(?:\d+\.?\s+)?(evaluation)$',
-    r'^(?:\d+\.?\s+)?(analysis)$',
-    r'^(?:\d+\.?\s+)?(implementation)$',
-    r'^(?:\d+\.?\s+)?(dataset(?:s)?)$',
-    r'^(?:\d+\.?\s+)?(conclusion(?:s)?(?:\s+and\s+future\s+work)?)$',
-    r'^(?:\d+\.?\s+)?(future\s+work)$',
-    r'^(?:\d+\.?\s+)?(limitations?)$',
-    r'^(?:\d+\.?\s+)?(acknowledg(?:e)?ments?)$',
-    r'^(?:\d+\.?\s+)?(references|bibliography)$',
-    r'^(?:\d+\.?\s+)?(appendi(?:x|ces))$',
-    # Numbered section pattern: "1. Something" or "2.3 Something"
-    r'^(\d+(?:\.\d+)*\.?\s+[A-Z][A-Za-z\s]{2,50})$',
+    PREFIX + r'(abstract)$',
+    PREFIX + r'(introduction)$',
+    PREFIX + r'(related\s+work)$',
+    PREFIX + r'(background)$',
+    PREFIX + r'(literature\s+review)$',
+    PREFIX + r'(methodology|methods?)$',
+    PREFIX + r'(proposed\s+(?:method|approach|system|framework|model))$',
+    PREFIX + r'(system\s+(?:design|architecture|overview))$',
+    PREFIX + r'(experiment(?:s|al)?(?:\s+(?:setup|results|design))?)$',
+    PREFIX + r'(results?\s*(?:and\s+)?(?:discussion|analysis)?)$',
+    PREFIX + r'(discussion)$',
+    PREFIX + r'(evaluation)$',
+    PREFIX + r'(analysis)$',
+    PREFIX + r'(implementation)$',
+    PREFIX + r'(dataset(?:s)?)$',
+    PREFIX + r'(conclusion(?:s)?(?:\s+and\s+future\s+work)?)$',
+    PREFIX + r'(future\s+work)$',
+    PREFIX + r'(limitations?)$',
+    PREFIX + r'(acknowledg(?:e)?ments?)$',
+    PREFIX + r'(references|bibliography)$',
+    PREFIX + r'(appendi(?:x|ces))$',
+    # Numbered/Roman section pattern: "I. Something" or "1. Something" or "2.3 Something"
+    r'^((?:[IVXLCDM]+|\d+)(?:\.\d+)*\.?\s+[A-Z][A-Za-z\s\-]{2,50})$',
 ]
 
 COMPILED_PATTERNS = [re.compile(p, re.IGNORECASE) for p in SECTION_PATTERNS]
