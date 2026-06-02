@@ -6,6 +6,65 @@ An advanced, production-grade autonomous AI research operating system designed t
 
 ---
 
+## 💡 Conceptual Project Overview: How it Works
+
+Rather than treating documents as unformatted text blobs or using simple single-turn chatbot lookups, the **Research OS** functions like a team of dedicated academic researchers working alongside you. Here is the simplified flow of how the system transforms complex PDF documents into highly structured, conversational research:
+
+### 1. Ingestion & Indexing (Reading & Storing)
+When you upload a scientific paper, the system doesn't just read it line-by-line. It performs **structural layout analysis** (like a human skimming headers). It identifies where the *Abstract*, *Methodology*, *Experimental Results*, and *Conclusions* begin and end. 
+*   **Logical Chunking:** It slices the document precisely along these section boundaries so that concepts never get mixed up.
+*   **Dual Indexing:** It indexes the text using two search strategies: **Dense Vector Search** (matching concepts and meanings) and **Sparse Keyword Search** (matching exact numbers, terms, or model names).
+
+### 2. Knowledge Extraction (Deep Understanding)
+As soon as a paper is ingested, a background processor (LLM) extracts structured knowledge immediately. It builds a permanent fact-sheet of the paper:
+*   What **novel methodologies** were proposed?
+*   What **evaluation metrics** and **datasets** were used?
+*   What are the exact **results**, **limitations**, and **future work** items?
+This structured sheet is kept in a separate tab, so you can inspect the core contributions of a paper at a glance without reading the whole PDF.
+
+### 3. The Multi-Agent Research Team (Conversational Q&A)
+When you ask a question (e.g. *"How does the accuracy of this model compare to previous baselines?"*), the system activates a specialized team of autonomous agents to draft your answer:
+
+```
+               ┌───────────────────────┐
+               │    User Submits Query  │
+               └───────────┬───────────┘
+                           ▼
+               ┌───────────────────────┐
+               │     PLANNER AGENT     │ <─── Analyzes chat history & resolves pronouns
+               └───────────┬───────────┘
+                           ▼
+               ┌───────────────────────┐
+               │    RETRIEVAL AGENT    │ <─── Conducts hybrid vector & keyword search
+               └───────────┬───────────┘
+                           ▼
+               ┌───────────────────────┐
+               │    ANALYSIS AGENT     │ <─── Cross-references retrieved chunks with facts
+               └───────────┬───────────┘
+                           ▼
+               ┌───────────────────────┐
+               │  SUMMARIZATION AGENT  │ <─── Drafts a beautifully formatted Markdown report
+               └───────────┬───────────┘
+                           ▼
+               ┌───────────────────────┐
+               │     CRITIC AGENT      │ <─── Audits claims, detects hallucinations, grades factuality
+               └───────────────────────┘
+```
+
+*   **The Planner Agent:** Takes your query, reads your chat history, and rewrites any ambiguous references (e.g. converting *"its baseline"* into *"the baseline metrics of Aegis DLP"*).
+*   **The Retrieval Agent:** Performs hybrid search and merges vector results with keyword matches to pull the most relevant academic passages.
+*   **The Analysis Agent:** Carefully cross-references your question against the retrieved passages and structured fact-sheets to construct a grounded response.
+*   **The Summarization Agent:** Packages the final answer into a clean, comprehensive, professional Markdown report.
+*   **The Critic Agent (The Gatekeeper):** Independent from the rest of the team, the Critic audits the generated answer word-by-word against the physical citations. It assigns an **Average Grounding Score (0-100%)** and flags any unsubstantiated claims before the response is shown to you.
+
+### 4. The Quality & Latency Dashboard
+To keep the search and LLM output quality at peak performance, a built-in **Performance Evaluation Dashboard** measures and plots key technical metrics:
+*   **Accuracy Gauges:** Computes Precision, Recall, and Ranking decay metrics against a ground-truth dataset.
+*   **Speed Profiler:** Breaks down the milliseconds taken by each retrieval component (Dense, Sparse, Fusion, Reranking).
+*   **Audit Metrics:** Visualizes historical factual reliability distributions to ensure the agents remain grounded and hallucination-free.
+
+---
+
 ## 🏛️ Theoretical Architecture & Core Frameworks
 
 The system is engineered as a unified research processing stack composed of four distinct engineering layers:
