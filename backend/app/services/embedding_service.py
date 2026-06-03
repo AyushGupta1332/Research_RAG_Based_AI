@@ -62,8 +62,14 @@ def _load_model():
             # Detect device
             if torch.cuda.is_available():
                 _device = 'cuda'
-                vram_gb = torch.cuda.get_device_properties(0).total_mem / (1024 ** 3)
-                logger.info(f"CUDA available: {torch.cuda.get_device_name(0)} ({vram_gb:.1f} GB VRAM)")
+                try:
+                    props = torch.cuda.get_device_properties(0)
+                    vram_gb = getattr(props, 'total_memory', getattr(props, 'total_mem', 0)) / (1024 ** 3)
+                    logger.info(f"CUDA available: {torch.cuda.get_device_name(0)} ({vram_gb:.1f} GB VRAM)")
+                except Exception as e:
+                    logger.warning(f"Failed to query CUDA properties: {e}. Using device name fallback.")
+                    vram_gb = 0
+                    logger.info("CUDA available: Yes (Properties lookup skipped)")
             else:
                 _device = 'cpu'
                 logger.info("No CUDA GPU detected — using CPU for embeddings")

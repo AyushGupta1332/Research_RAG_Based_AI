@@ -85,6 +85,19 @@ def _init_extensions(app):
         from .models import User, Paper, PaperSection, Chunk, PaperExtraction, ResearchSession, ResearchMessage  # noqa: F401
         db.create_all()
 
+        # Pre-load embedding and reranker models on the main thread
+        # to initialize CUDA resources safely and prevent background thread deadlocks.
+        if app.config.get('ENV') != 'testing' and not app.config.get('TESTING'):
+            try:
+                app.logger.info("Pre-loading local embedding and reranker models on main thread...")
+                from .services.embedding_service import _load_model
+                from .services.reranker_service import _load_reranker
+                _load_model()
+                _load_reranker()
+                app.logger.info("Models pre-loaded successfully.")
+            except Exception as e:
+                app.logger.warning(f"Model pre-loading skipped or failed: {e}")
+
 
 def _register_blueprints(app):
     """Register all API blueprints."""

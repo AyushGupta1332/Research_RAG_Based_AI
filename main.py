@@ -12,7 +12,11 @@ import subprocess
 
 ROOT_DIR = os.path.dirname(os.path.abspath(__file__))
 BACKEND_DIR = os.path.join(ROOT_DIR, 'backend')
-REQUIREMENTS = os.path.join(BACKEND_DIR, 'requirements.txt')
+
+# Check root first, fallback to backend for requirements.txt
+REQUIREMENTS = os.path.join(ROOT_DIR, 'requirements.txt')
+if not os.path.exists(REQUIREMENTS):
+    REQUIREMENTS = os.path.join(BACKEND_DIR, 'requirements.txt')
 
 
 def print_banner():
