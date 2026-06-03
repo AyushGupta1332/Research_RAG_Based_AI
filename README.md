@@ -45,23 +45,12 @@ When you ask a question (e.g. *"How does the accuracy of this model compare to p
                ┌───────────────────────┐
                │  SUMMARIZATION AGENT  │ <─── Drafts a beautifully formatted Markdown report
                └───────────┬───────────┘
-                           ▼
-               ┌───────────────────────┐
-               │     CRITIC AGENT      │ <─── Audits claims, detects hallucinations, grades factuality
-               └───────────────────────┘
 ```
 
 *   **The Planner Agent:** Takes your query, reads your chat history, and rewrites any ambiguous references (e.g. converting *"its baseline"* into *"the baseline metrics of Aegis DLP"*).
 *   **The Retrieval Agent:** Performs hybrid search and merges vector results with keyword matches to pull the most relevant academic passages.
 *   **The Analysis Agent:** Carefully cross-references your question against the retrieved passages and structured fact-sheets to construct a grounded response.
 *   **The Summarization Agent:** Packages the final answer into a clean, comprehensive, professional Markdown report.
-*   **The Critic Agent (The Gatekeeper):** Independent from the rest of the team, the Critic audits the generated answer word-by-word against the physical citations. It assigns an **Average Grounding Score (0-100%)** and flags any unsubstantiated claims before the response is shown to you.
-
-### 4. The Quality & Latency Dashboard
-To keep the search and LLM output quality at peak performance, a built-in **Performance Evaluation Dashboard** measures and plots key technical metrics:
-*   **Accuracy Gauges:** Computes Precision, Recall, and Ranking decay metrics against a ground-truth dataset.
-*   **Speed Profiler:** Breaks down the milliseconds taken by each retrieval component (Dense, Sparse, Fusion, Reranking).
-*   **Audit Metrics:** Visualizes historical factual reliability distributions to ensure the agents remain grounded and hallucination-free.
 
 ---
 
@@ -76,9 +65,9 @@ The system is engineered as a unified research processing stack composed of four
                          └──► 2b. STRUCTURED KNOWLEDGE EXTRACTION (Llama 3.3 Background Process)
                                       │
 [ User Query ] ──► 3. CONVERSATIONAL MULTI-AGENT ORCHESTRATION:
-                         Planner (Query Rewriter) ➔ Retrieval ➔ Analysis ➔ Summarizer ➔ Critic
+                         Planner (Query Rewriter) ➔ Retrieval ➔ Analysis ➔ Summarizer
                                       │
-                         [ Grounded Report + Audit Trace ]
+                         [ Grounded Report ]
 ```
 
 ### 1. Ingestion & Preprocessing Pipeline
@@ -89,9 +78,8 @@ The system is engineered as a unified research processing stack composed of four
 To achieve state-of-the-art context matching, the system implements a dual-retrieve, fuse, and rerank pipeline:
 *   **Dense Semantic Indexing:** Text chunks are vectorized locally using `BAAI/bge-m3` (1024-dimension embeddings, L2 normalized) via `sentence-transformers` on GPU (CUDA) with CPU fallbacks, stored in a persistent local `ChromaDB` collection.
 *   **Sparse Keyword Indexing:** Concurrently, an in-memory `BM25Okapi` index is generated using tokenized, stopword-filtered versions of the chunks via `rank-bm25` to capture exact terms (e.g., model acronyms, datasets, specific numbers).
-*   **Reciprocal Rank Fusion (RRF):** Rankings from Dense and Sparse queries are fused mathematically using RRF ($k=60$) weighted by configurable sliders:
-    $$\text{RRF\_Score}(d) = w_{\text{sparse}} \cdot \frac{1}{60 + \text{Rank}_{\text{sparse}}(d)} + w_{\text{dense}} \cdot \frac{1}{60 + \text{Rank}_{\text{dense}}(d)}$$
-*   **Cross-Encoder Reranking:** The top merged candidates are fed into a local cross-encoder (`BAAI/bge-reranker-large`), which computes exact query-chunk matching scores, normalized to $0\text{--}100\%$ relevance bounds.
+*   **Reciprocal Rank Fusion (RRF):** Rankings from Dense and Sparse queries are fused mathematically using RRF ($k=60$) weighted by configurable sliders.
+*   **Cross-Encoder Reranking:** The top merged candidates are fed into a local cross-encoder (`BAAI/bge-reranker-large`), which computes exact query-chunk matching scores.
 
 ### 3. Structured Knowledge Extraction
 *   **Background LLM Extraction:** Upon completion of paper ingestion, a background daemon thread isolates key sections and runs a multi-prompt schema extractor using **Groq JSON Mode** (`Llama-3.3-70b-versatile`).
@@ -103,13 +91,6 @@ When a research query is submitted, a loosely coupled, zero-dependency custom ag
 *   **Retrieval Agent:** Fetches citation-grounded passages using the Hybrid Retrieval service.
 *   **Research Analysis Agent:** Synthesizes retrieved chunks and structured extractions, performing benchmarks, methodology comparisons, and limitation studies in the context of the chat log.
 *   **Summarization Agent:** Compiles comprehensive, beautifully structured academic reports in Markdown.
-*   **Critic Agent (Grounding Auditor):** Acts as an independent auditor. It verifies every claim in the report against the retrieved chunks, computes a **Grounding Score (0–100%)**, flags hallucinations, and details contradictions/unsupported claims.
-
-### 5. Automated Performance Evaluation Framework (Phase 8)
-To guarantee the empirical quality of vector retrieval and the semantic fidelity of the multi-agent outputs, the system runs an automated end-to-end evaluation suite:
-*   **Vector Retrieval Benchmarking:** Tests the system against a ground-truth dataset (`evaluation_dataset.json`) consisting of common query vectors and their corresponding paper/section targets.
-*   **Component Latency Profiling:** Measures fine-grained timing metrics (in milliseconds) across each pipeline step—BM25 search, dense retrieval, RRF fusion, and cross-encoder reranking.
-*   **Factual Grounding Audits:** Periodically queries database history to aggregate the Critic Agent's auditing reviews, calculating the running average grounding index and historical verdict distributions.
 
 ---
 
@@ -118,23 +99,16 @@ To guarantee the empirical quality of vector retrieval and the semantic fidelity
 ```
 research-agent/
 ├── main.py                          # Bootstrapper (auto-setup venv, installs requirements, boots Flask)
-├── implementation_plan.md           # Engineering implementation phases
-├── Instructions.md                  # Conceptual system design blueprint
-├── memory.md                        # Active session progress journal
 ├── README.md                        # This file
 │
 ├── backend/
 │   ├── run.py                       # Flask application entry point
 │   ├── requirements.txt             # Python packages (sentence-transformers, chromadb, groq, rank-bm25)
-│   ├── .env / .env.example          # API keys & configuration environment
-│   ├── migrations/                  # Alembic DB migration schemas
 │   ├── instance/
 │   │   ├── research_agent.db        # SQLite relational database
 │   │   └── chromadb/                # Local persistent vector store
 │   └── app/
 │       ├── __init__.py              # Application factory pattern
-│       ├── config.py                # Environment-specific configuration
-│       ├── extensions.py            # Extensions init (SQLAlchemy, JWT, Migrate)
 │       ├── models/
 │       │   ├── user.py              # User account authentication models
 │       │   ├── paper.py             # Paper, Section, Chunk tables
@@ -143,11 +117,10 @@ research-agent/
 │       ├── api/
 │       │   ├── auth.py              # User authentication REST endpoints
 │       │   ├── papers.py            # Paper library uploads & extractions
-│       │   ├── query.py             # Conversational agent & performance benchmarking endpoints
+│       │   ├── query.py             # Conversational agent query runner
 │       │   └── sessions.py          # Session management & conversation thread APIs
 │       ├── utils/
-│       │   ├── responses.py         # Standardized API response formatters
-│       │   └── evaluation_dataset.json # Ground-truth retrieval test cases (Phase 8)
+│       │   └── responses.py         # Standardized API response formatters
 │       └── services/
 │           ├── auth_service.py      # Authentication workflows
 │           ├── pdf_parser.py        # PDF layouts section extractor
@@ -160,8 +133,7 @@ research-agent/
 │           ├── search_service.py    # Hybrid retrieval coordinator
 │           ├── llm_provider.py      # Groq LLM singleton abstraction
 │           ├── extraction_prompts.py# Structured JSON schemas for analysis
-│           ├── extraction_service.py# Background metadata extraction engine
-│           └── evaluation_service.py# Benchmarks precision & grounding auditor (Phase 8)
+│           └── extraction_service.py# Background metadata extraction engine
 │
 └── frontend/
     ├── templates/
@@ -172,8 +144,7 @@ research-agent/
     │   ├── upload.html              # Drag-and-drop file ingestion portal
     │   ├── papers.html              # Indexed papers index
     │   ├── paper_detail.html        # Detailed section chunks & AI extraction tab
-    │   ├── research.html            # Conversational Agent workspace (split-view chat)
-    │   └── evaluation.html          # Performance Dashboard UI with SVG gauges (Phase 8)
+    │   └── research.html            # Conversational Agent workspace (split-view chat)
     └── static/
         ├── css/styles.css           # Brand scrollbar customizations and custom CSS
         └── js/

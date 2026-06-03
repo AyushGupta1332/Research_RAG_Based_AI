@@ -59,8 +59,3 @@ def research_page():
     """AI Research Assistant page (multi-agent)."""
     return render_template('research.html')
 
-
-@pages_bp.route('/evaluation')
-def evaluation_page():
-    """System evaluation dashboard page."""
-    return render_template('evaluation.html')

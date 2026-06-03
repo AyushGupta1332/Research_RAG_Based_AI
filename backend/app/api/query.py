@@ -218,35 +218,3 @@ def research_query():
         logger.error(f"Research query failed: {e}", exc_info=True)
         return error_response(f'Research query failed: {str(e)}', 500)
 
-
-@query_bp.route('/evaluate', methods=['GET'])
-@jwt_required()
-def get_evaluation():
-    """Get the current system grounding and audit stats from past database interactions."""
-    try:
-        from ..services.evaluation_service import _get_db_grounding_stats
-        app = current_app._get_current_object()
-        stats = _get_db_grounding_stats(app)
-        return success_response({'grounding_stats': stats})
-    except Exception as e:
-        logger.error(f"Failed to get evaluation stats: {e}", exc_info=True)
-        return error_response(f'Failed to get stats: {str(e)}', 500)
-
-
-@query_bp.route('/evaluate/run', methods=['POST'])
-@jwt_required()
-def run_evaluation():
-    """Run a live retrieval search benchmarking process against the evaluation dataset."""
-    try:
-        from ..services.evaluation_service import run_system_evaluation
-        app = current_app._get_current_object()
-        results = run_system_evaluation(app)
-        
-        if 'error' in results:
-            return error_response(results['error'], 400)
-            
-        return success_response(results)
-    except Exception as e:
-        logger.error(f"Failed to run system evaluation: {e}", exc_info=True)
-        return error_response(f'Failed to run evaluation: {str(e)}', 500)
-
